@@ -136,6 +136,31 @@ module Savon
     # The global SOAP version.
     @@version = 1
 
+    # the default global envelope namespace
+    @@envelope_namespace = "env"
+
+    # the default global service namespace
+    @@service_namespace = "wsdl"
+
+    # Returns the envelope's namespace. Default value is "env"
+    # Results in root element looking like <env:Envelope> ... </env:Envelope>
+    def self.envelope_namespace
+        @@envelope_namespace 
+    end
+
+    def self.envelope_namespace=(envelope_namespace)
+        @@envelope_namespace = envelope_namespace
+    end
+
+    # Returns the service's namespace. Default value is "wsdl"
+    def self.service_namespace
+        @@service_namespace 
+    end
+
+    def self.service_namespace=(service_namespace)
+        @@service_namespace = service_namespace
+    end
+
     # Returns the global SOAP version.
     def self.version
       @@version
@@ -219,15 +244,15 @@ module Savon
     attr_writer :namespaces
 
     # Returns the namespaces. A Hash containing the namespaces (keys) and the corresponding URI's
-    # (values). Defaults to a Hash containing an +xmlns:env+ key and the namespace for the current
+    # (values). Defaults to a Hash containing an +xmlns:#{envelope_namespace}+ key and the namespace for the current
     # SOAP version.
     def namespaces
-      @namespaces ||= { "xmlns:env" => Namespace[version] }
+      @namespaces ||= { "xmlns:#{envelope_namespace}" => Namespace[version] }
     end
 
-    # Convenience method for setting the +xmlns:wsdl+ namespace.
+    # Convenience method for setting the +xmlns:#{service_namespace}+ namespace.
     def namespace=(namespace)
-      namespaces["xmlns:wsdl"] = namespace
+      namespaces["xmlns:#{service_namespace}"] = namespace
     end
 
     # Sets the SOAP version.
@@ -240,12 +265,24 @@ module Savon
       @version ||= self.class.version
     end
 
+    # Convenience method for returning the envelope namespace
+    # The default value is "env"
+    def envelope_namespace
+        @envelope_namespace ||= self.class.envelope_namespace
+    end
+
+    # Convenience method for returning the service namespace
+    # The default value is "wsdl"
+    def service_namespace
+        @service_namespace ||= self.class.service_namespace
+    end
+
     # Returns the SOAP envelope XML.
     def to_xml
       unless @xml
         @builder.instruct!
-        @xml = @builder.env :Envelope, merged_namespaces do |xml|
-          xml.env(:Header) { xml << merged_header } unless merged_header.empty?
+        @xml = @builder.tag!("#{envelope_namespace}:Envelope", merged_namespaces) do |xml|
+          xml.tag!("#{envelope_namespace}:Header") { xml << merged_header } unless merged_header.empty?
           xml_body xml
         end
       end
@@ -273,8 +310,8 @@ module Savon
 
     # Adds a SOAP XML body to a given +xml+ Object.
     def xml_body(xml)
-      xml.env(:Body) do
-        xml.tag!(:wsdl, *input_array) { xml << (@body.to_soap_xml rescue @body.to_s) }
+      xml.tag!("#{envelope_namespace}:Body") do
+        xml.tag!(service_namespace, *input_array) { xml << (@body.to_soap_xml rescue @body.to_s) }
       end
     end
 

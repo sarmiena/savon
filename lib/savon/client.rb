@@ -95,7 +95,7 @@ module Savon
     def setup_objects(action, input, &block)
       @soap, @wsse = SOAP.new(action, input, soap_endpoint), WSSE.new
       yield_objects &block if block
-      @soap.namespaces["xmlns:wsdl"] ||= @wsdl.namespace_uri if @wsdl.enabled?
+      @soap.namespaces["xmlns:#{SOAP.service_namespace}"] ||= @wsdl.namespace_uri if @wsdl.enabled?
       @soap.wsse = @wsse
     end
 
